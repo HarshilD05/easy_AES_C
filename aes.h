@@ -38,6 +38,37 @@ const uint8_t sBox[256] = {
     0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16  // F
 };
 
+/** Gives the inverse Substitute Box for the substitute box provided.
+ * @param sBox : pointer to the Substitute Box (Byte Array of size 256).
+ * @return A pointer to the Inverse Substitute Box whihc was created. 
+ *          Note that this memory allocation has to be handled by the user.
+*/
+EXPORT uint8_t* inverseSBoxGen (const uint8_t* sBox);
+
+/** Utility Function to print the Substitute Box with the row and column indexing.
+ * @param sBox : pointer to the Substitute Box (Byte Array of size 256).
+*/
+EXPORT void printSBox (const uint8_t* sBox);
+
+
+/** Utility function used in testing to know values of the byte array  
+ * @param byteArray : The pointer to the byte array to be printed
+ * @param size : The total length of the byteArray
+ * @param columns : The number of columns which should be printed in each line.
+ *                  If value is given 0 then it will print the entire ByteArray in a single line.
+ */
+EXPORT void printBytesAsHex(const uint8_t* byteArray, size_t size, size_t columns);
+
+
+/** Generates all the roundKeys required for the specific AES_type   
+ * @param ogKey : The pointer to the byteArray which holds the original key
+ * @param aesType : Defines original key size being used for AES (128, 192 or 256 bits).
+ * 
+ * @return : A pointer to the newly allocated memory which holds the expanded key.
+ *          This memory allocated has to be handles by the user.
+ */
+EXPORT uint8_t* expandKey (uint8_t* ogKey, AES_type aesType);
+
 /** Encrypts a 16-byte text block using the Advanced Encryption Standard (AES) algorithm.
  *
  * This function takes a 16-byte plaintext block and a 16-byte encryption key as input
@@ -57,7 +88,7 @@ const uint8_t sBox[256] = {
  *
  * @see For more information about the AES algorithm and its encryption modes, refer to the AES specification.
  */
-EXPORT uint8_t* cipher (uint8_t* text, uint8_t* key, AES_type aesType);
+EXPORT uint8_t* AES_cipher (uint8_t* text, uint8_t* key, AES_type aesType);
 
 /** Decrypts a 16-byte encrypted text block using the Advanced Encryption Standard (AES) algorithm.
  *
@@ -79,7 +110,43 @@ EXPORT uint8_t* cipher (uint8_t* text, uint8_t* key, AES_type aesType);
  *
  * @see For more information about the AES algorithm and its decryption modes, refer to the AES specification.
  */
-EXPORT uint8_t* invCipher (uint8_t* encryptedText, uint8_t* key, AES_type aesType);
+EXPORT uint8_t* AES_invCipher (uint8_t* encryptedText, uint8_t* key, AES_type aesType);
+
+
+/** Adds padding to the input text according to the PKCS standards ONLY when the text length is not a multiple of the blockSize.
+ * @param text : the pointer to the plain Text
+ * @param blockSize : the size of 1 block in Bytes.
+ * 
+ * @return : Returns a pointer to the padded Text whose length is a multiple of the blockSize.
+ *          This memory allocation has to be handled by the user.
+ * @see PKCS padding : https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
+ */
+EXPORT char* addPadding (char* text, size_t blockSize);
+
+/** Removes the padding from a padded Text returned from the addPadding() function.
+ * @param paddedText : The pointer to the paddedText
+ * @param blockSize : The size of 1 block.
+ */
+EXPORT void removePadding (char* paddedText, size_t blockSize);
+
+/** Converts a Byte Array to a Hexadecimal String.
+ * This Helps in correctly transferring the actual Byte Array without misinterpretation due to non-printable ASCII characters.
+ *  
+ * @param byteArray : the pointer to the Byte Array to be converted.
+ * @param length : the length of the Byte Array
+ * 
+ * @return Returns a pointer to the HexaDecimal string.
+ *          This memory allocation has to be handled by the user.
+ */
+EXPORT char* bytesToHexString (uint8_t* byteArray, size_t length);
+
+/** Converts a HexaDecimal string to a byte array.
+ * @note The Hexadecimal String should have no spaces in it and must be null terminated.
+ * 
+ * @param hexString : Thepointer to the HexaDecimal String
+ */
+EXPORT uint8_t* hexStringToByteArray(const char* hexString);
+
 
 /** Encrypts plaintext using the Advanced Encryption Standard (AES) algorithm.
  *

@@ -127,7 +127,12 @@ uint8_t* sBoxGen (unsigned int seed) {
 
 };
 
-uint8_t* inverseSBoxGen (const uint8_t* sBox) {
+/** Gives the inverse Substitute Box for the substitute box provided.
+ * @param sBox : pointer to the Substitute Box (Byte Array of size 256).
+ * @return A pointer to the Inverse Substitute Box whihc was created. 
+ *          Note that this memory allocation has to be handled by the user.
+*/
+EXPORT uint8_t* inverseSBoxGen (const uint8_t* sBox) {
     const size_t rows = 16;
     const size_t columns = 16;
     size_t i;
@@ -141,7 +146,10 @@ uint8_t* inverseSBoxGen (const uint8_t* sBox) {
     return inverseSBox;
 }
 
-void printSBox (const uint8_t* sBox) {
+/** Utility Function to print the Substitute Box with the row and column indexing.
+ * @param sBox : pointer to the Substitute Box (Byte Array of size 256).
+*/
+EXPORT void printSBox (const uint8_t* sBox) {
     const size_t rows = 16;
     const size_t columns = 16;
 
@@ -168,13 +176,13 @@ void printSBox (const uint8_t* sBox) {
 }
 
 
-/**  Utility function used in testing to know values of the byte array  
+/** Utility function used in testing to know values of the byte array  
  * @param byteArray : The pointer to the byte array to be printed
  * @param size : The total length of the byteArray
  * @param columns : The number of columns which should be printed in each line.
  *                  If value is given 0 then it will print the entire ByteArray in a single line.
  */
-void printBytesAsHex(const uint8_t* byteArray, size_t size, size_t columns) {
+EXPORT void printBytesAsHex(const uint8_t* byteArray, size_t size, size_t columns) {
     if (columns == 0) columns = size;
     for (size_t i = 0; i < size; i++) {
 		if (i % columns == 0) printf("\n");
@@ -183,14 +191,14 @@ void printBytesAsHex(const uint8_t* byteArray, size_t size, size_t columns) {
     printf("\n");
 }
 
-/**  Generates all the roundKeys required for the specific AES_type   
+/** Generates all the roundKeys required for the specific AES_type   
  * @param ogKey : The pointer to the byteArray which holds the original key
  * @param aesType : Defines original key size being used for AES (128, 192 or 256 bits).
  * 
  * @return : A pointer to the newly allocated memory which holds the expanded key.
  *          This memory allocated has to be handles by the user.
  */
-uint8_t* expandKey (uint8_t* ogKey, AES_type aesType) {
+EXPORT uint8_t* expandKey (uint8_t* ogKey, AES_type aesType) {
     int Nr;
     int Nk;
     uint8_t Rcon[] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
@@ -380,7 +388,7 @@ void mixColumns (uint8_t* state) {
  *
  * @see For more information about the AES algorithm and its encryption modes, refer to the AES specification.
  */
-uint8_t* cipher (uint8_t* text, uint8_t* key, AES_type aesType) {
+EXPORT uint8_t* AES_cipher (uint8_t* text, uint8_t* key, AES_type aesType) {
     int Nk;
     int Nr;
 
@@ -532,7 +540,7 @@ void invMixColumns (uint8_t* state) {
  *
  * @see For more information about the AES algorithm and its decryption modes, refer to the AES specification.
  */
-uint8_t* invCipher (uint8_t* encryptedText, uint8_t* key, AES_type aesType) {
+EXPORT uint8_t* AES_invCipher (uint8_t* encryptedText, uint8_t* key, AES_type aesType) {
     int Nk;
     int Nr;
 
@@ -623,7 +631,7 @@ uint8_t* invCipher (uint8_t* encryptedText, uint8_t* key, AES_type aesType) {
  *          This memory allocation has to be handled by the user.
  * @see PKCS padding : https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
  */
-char* addPadding (char* text, size_t blockSize) {
+EXPORT char* addPadding (char* text, size_t blockSize) {
     size_t len = strlen(text);  
     size_t diff = blockSize - (len%blockSize);
     
@@ -646,7 +654,7 @@ char* addPadding (char* text, size_t blockSize) {
  * @param paddedText : The pointer to the paddedText
  * @param blockSize : The size of 1 block.
  */
-void removePadding (char* paddedText, size_t blockSize) {
+EXPORT void removePadding (char* paddedText, size_t blockSize) {
     size_t len = strlen(paddedText);
     size_t padding = paddedText[len-1];
 
@@ -668,7 +676,7 @@ void removePadding (char* paddedText, size_t blockSize) {
  * @return Returns a pointer to the HexaDecimal string.
  *          This memory allocation has to be handled by the user.
  */
-char* bytesToHexString (uint8_t* byteArray, size_t length) {
+EXPORT char* bytesToHexString (uint8_t* byteArray, size_t length) {
     char* hexString = (char*)malloc(length * 2 + 1); // Two characters per byte plus null terminator
     if (hexString == NULL) {
         return NULL; // Memory allocation failed
@@ -687,7 +695,7 @@ char* bytesToHexString (uint8_t* byteArray, size_t length) {
  * 
  * @param hexString : Thepointer to the HexaDecimal String
  */
-uint8_t* hexStringToByteArray(const char* hexString) {
+EXPORT uint8_t* hexStringToByteArray(const char* hexString) {
     // Return NULL if no pointer is passed
     if (hexString == NULL) return NULL;
 
@@ -739,7 +747,7 @@ uint8_t* hexStringToByteArray(const char* hexString) {
  * @see For more information about the AES algorithm and its encryption modes, refer to the AES specification.
  * @see PKCS#7 padding: https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
  */
-char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_type aesType) {
+EXPORT char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_type aesType) {
     // Adding Padding to the plain Text
     char* paddedText = addPadding(plainText, 16);
     size_t textLength = strlen(paddedText);
@@ -761,7 +769,7 @@ char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_type ae
 
     /*  Main Encryption */
     // First Text Block
-    uint8_t* encryptedState = cipher(paddedText, key, aesType);
+    uint8_t* encryptedState = AES_cipher(paddedText, key, aesType);
     // Copying the Encrypted State to the Final Encrypted Text
     memcpy(encryptedText, encryptedState, 16);
 
@@ -775,7 +783,7 @@ char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_type ae
 
         free(encryptedState); // Freeing the previous allocated memory to the encryptedState Pointer so that pointer can be used to point to new location
 
-        encryptedState = cipher(paddedText+i, key, aesType);
+        encryptedState = AES_cipher(paddedText+i, key, aesType);
         // Copying the Encrypted State to the Final Encrypted Text
         memcpy(encryptedText+i, encryptedState, 16);
 
@@ -819,7 +827,7 @@ char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_type ae
  * @see AES_encrypt function documentation for more information about AES encryption and usage.
  * @see For more information about the AES algorithm and its decryption modes, refer to the AES specification.
  */
-char* AES_decrypt (char* encryptedHexString, char* keyHexStr, char* IVHexStr, AES_type aesType) {
+EXPORT char* AES_decrypt (char* encryptedHexString, char* keyHexStr, char* IVHexStr, AES_type aesType) {
     uint8_t* encryptedText = hexStringToByteArray(encryptedHexString);
     size_t textLen = strlen(encryptedText);
     uint8_t* key = hexStringToByteArray(keyHexStr);
@@ -837,7 +845,7 @@ char* AES_decrypt (char* encryptedHexString, char* keyHexStr, char* IVHexStr, AE
         // Freeing the previous memory allocated to the decryptedState so that pointer can be reused for next memory allocation
         free(decryptedState);
         // Decrypting Current State Block
-        decryptedState = invCipher( (uint8_t*)encryptedText+i, key, aesType);
+        decryptedState = AES_invCipher( (uint8_t*)encryptedText+i, key, aesType);
 
         // For CBC Mode
         if (iv != NULL) {
