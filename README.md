@@ -45,19 +45,21 @@ The key steps in Advanced Encryption Scheme are :
     For each round of the AES encryption we XOR the Round Key with the State Matrix. This makes the encryption dependent on the input Key. All the required Round Keys were already genrated in the Key Expansion part.
 
 4. **Substitute Bytes**
+
     Each Byte in the State Matrix is Substituted using a 16 x 16 substitute table.
-   
-    ![Substitute Box](https://github.com/HarshilD05/AES/ReadMe_images/SubstituteBox.png?raw=true)
+
+    ![SubstituteBox](https://github.com/HarshilD05/AES/assets/123889056/39cacdcf-b97e-46d6-824a-ee997f37834a)
    
     For more information about Rijndael's Substitute Box click [here](https://en.wikipedia.org/wiki/Rijndael_S-box).
 
 5. **Shift Rows**
    
     Each row in the State Matrix is Rotated Left a different number of times. This provides diffusion in our encryption algorithm.
-   
-    ![Rotate Rows Image](https://github.com/HarshilD05/AES/ReadMe_images/RotateRows.png?raw=true) 
 
-7. **Mix Columns**
+    ![RotateRows](https://github.com/HarshilD05/AES/assets/123889056/72246adb-e1a9-4cd8-adc4-c235c9a1154d)
+
+
+6. **Mix Columns**
     
     The Mix Columns step does a matrix Multiplication of each column of the State Matrix with a fixed 4x4 matrix to get the columns for the resulting State Matrix.
 
