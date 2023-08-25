@@ -47,7 +47,7 @@ The key steps in Advanced Encryption Scheme are :
 4. **Substitute Bytes**
     Each Byte in the State Matrix is Substituted using a 16 x 16 substitute table.
    
-    ![Substitute Box](https://github.com/HarshilD05/AES/ReadMe_images/SubstituteBox.jpeg?raw=true)
+    ![Substitute Box](https://github.com/HarshilD05/AES/ReadMe_images/SubstituteBox.png?raw=true)
    
     For more information about Rijndael's Substitute Box click [here](https://en.wikipedia.org/wiki/Rijndael_S-box).
 
@@ -55,7 +55,7 @@ The key steps in Advanced Encryption Scheme are :
    
     Each row in the State Matrix is Rotated Left a different number of times. This provides diffusion in our encryption algorithm.
    
-    ![Rotate Rows Image](https://github.com/HarshilD05/AES/ReadMe_images/RotateRows.jpeg?raw=true) 
+    ![Rotate Rows Image](https://github.com/HarshilD05/AES/ReadMe_images/RotateRows.png?raw=true) 
 
 7. **Mix Columns**
     
