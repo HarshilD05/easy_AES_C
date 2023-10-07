@@ -6,85 +6,85 @@
 
 /*  Functions required for handling GF(2^8) polynomial arithmetic   */
 uint8_t reduceGF2_8 (unsigned poly, unsigned irreducablePoly) { 
-    uint8_t msbPoly = 0;
-    uint8_t msbIrrPoly = 0;
-    uint8_t diff = 0;
-    unsigned p;
+	uint8_t msbPoly = 0;
+	uint8_t msbIrrPoly = 0;
+	uint8_t diff = 0;
+	unsigned p;
 
-    // Calculating the MSB Pos of Irreducable polynomial
-    p = irreducablePoly;
-    while (p) {
-        ++msbIrrPoly;
-        p >>= 1;
-    }
+	// Calculating the MSB Pos of Irreducable polynomial
+	p = irreducablePoly;
+	while (p) {
+		++msbIrrPoly;
+		p >>= 1;
+	}
 
-    // Reducing the Polynomial with the irreducable polynomial
-    while (poly > 0xFF) {
-        // Calculating the MSB Pos of polynomial
-        p = poly;
-        msbPoly = 0;
-        while (p) {
-            ++msbPoly;
-            p >>= 1;
-        }
+	// Reducing the Polynomial with the irreducable polynomial
+	while (poly > 0xFF) {
+		// Calculating the MSB Pos of polynomial
+		p = poly;
+		msbPoly = 0;
+		while (p) {
+			++msbPoly;
+			p >>= 1;
+		}
 
-        diff = msbPoly - msbIrrPoly;
+		diff = msbPoly - msbIrrPoly;
 
-        poly ^= irreducablePoly<<diff;
-    }
+		poly ^= irreducablePoly<<diff;
+	}
 
-    return (poly & 0xFF);
+	return (poly & 0xFF);
 }
 
 uint8_t additionGF2_8 (uint8_t a, uint8_t b) {
-    return a^b;
+	return a^b;
 }
 
 uint8_t multiplyGF2_8 (uint8_t a, uint8_t b) {
-    unsigned temp;
-    uint8_t ans = 0;
-    uint8_t pow = 0;
+	unsigned temp;
+	uint8_t ans = 0;
+	uint8_t pow = 0;
 
-    while (a) {
-        if (a & 0x01) {
-            temp = b << pow;
+	while (a) {
+		if (a & 0x01) {
+			temp = b << pow;
 
-            if (temp > 0xFF) temp = reduceGF2_8(temp,0x11B);
+			if (temp > 0xFF) temp = reduceGF2_8(temp,0x11B);
 
-            ans = additionGF2_8(ans, temp);
-        }
-        a>>=1;
-        ++pow;
-    }
+			ans = additionGF2_8(ans, temp);
+		}
+		a>>=1;
+		++pow;
+	}
 
-    return ans;
+	return ans;
 }
 
 void print_GF2_polynomial(uint8_t num) {
-    bool isFirstTerm = true;
+	bool isFirstTerm = true;
 
-    for (int i = 7; i >= 0; --i) {
-        if ((num >> i) & 0x01) {
-            if (!isFirstTerm) {
-                printf(" + ");
-            }
+	for (int i = 7; i >= 0; --i) {
+		if ((num >> i) & 0x01) {
+			if (!isFirstTerm) {
+				printf(" + ");
+			}
 
-            if (i == 0) {
-                printf("1");
-            } else {
-                printf("x^%d", i);
-            }
+			if (i == 0) {
+				printf("1");
+			} else {
+				printf("x^%d", i);
+			}
 
-            isFirstTerm = false;
-        }
-    }
+			isFirstTerm = false;
+		}
+	}
 
-    if (isFirstTerm) {
-        // If no terms are present, print "0" polynomial
-        printf("0");
-    }
-    
-    printf("\n");
+	if (isFirstTerm) {
+		// If no terms are present, print "0" polynomial
+		printf("0");
+	}
+	
+	printf("\n");
 }
 
 
@@ -92,7 +92,7 @@ void print_GF2_polynomial(uint8_t num) {
 
 /*  Generates a random byte (number between 0x00 and 0xFF)  */
 uint8_t rngByte() {
-    return (rand()%0x100);
+	return (rand()%0x100);
 }
 
 uint8_t* sBoxGen (unsigned int seed) {  
@@ -133,46 +133,46 @@ uint8_t* sBoxGen (unsigned int seed) {
  *          Note that this memory allocation has to be handled by the user.
 */
 EXPORT uint8_t* inverseSBoxGen (const uint8_t* sBox) {
-    const size_t rows = 16;
-    const size_t columns = 16;
-    size_t i;
+	const size_t rows = 16;
+	const size_t columns = 16;
+	size_t i;
 
-    uint8_t* inverseSBox = (uint8_t*)calloc(rows*columns,sizeof(uint8_t) );
+	uint8_t* inverseSBox = (uint8_t*)calloc(rows*columns,sizeof(uint8_t) );
 
-    for (i = 0;i<=0xFF;++i) {
-        inverseSBox[ sBox[i] ] = i;
-    }
+	for (i = 0;i<=0xFF;++i) {
+		inverseSBox[ sBox[i] ] = i;
+	}
 
-    return inverseSBox;
+	return inverseSBox;
 }
 
 /** Utility Function to print the Substitute Box with the row and column indexing.
  * @param sBox : pointer to the Substitute Box (Byte Array of size 256).
 */
 EXPORT void printSBox (const uint8_t* sBox) {
-    const size_t rows = 16;
-    const size_t columns = 16;
+	const size_t rows = 16;
+	const size_t columns = 16;
 
-    // Printing Column Index
-    printf("\n/0 ");
-    for (int i = 1;i<16;++i) {
-        printf(" %x ",i);
-    }
-    printf("\n");
+	// Printing Column Index
+	printf("\n/0 ");
+	for (int i = 1;i<16;++i) {
+		printf(" %x ",i);
+	}
+	printf("\n");
 
-    // Printing the SBox
-    for (int i = 0;i<rows;++i) {
-        printf("\n");
-        for (int j = 0;j<columns;++j) {
-            printf("%02x ", sBox[i*columns + j] );
-        }
-        
-        // Printing Row Index
-        printf("\t//%x",i);
+	// Printing the SBox
+	for (int i = 0;i<rows;++i) {
+		printf("\n");
+		for (int j = 0;j<columns;++j) {
+			printf("%02x ", sBox[i*columns + j] );
+		}
+		
+		// Printing Row Index
+		printf("\t//%x",i);
 
-    }
+	}
 
-    printf("\n");
+	printf("\n");
 }
 
 
@@ -183,12 +183,12 @@ EXPORT void printSBox (const uint8_t* sBox) {
  *                  If value is given 0 then it will print the entire ByteArray in a single line.
  */
 EXPORT void printBytesAsHex(const uint8_t* byteArray, size_t size, size_t columns) {
-    if (columns == 0) columns = size;
-    for (size_t i = 0; i < size; i++) {
+	if (columns == 0) columns = size;
+	for (size_t i = 0; i < size; i++) {
 		if (i % columns == 0) printf("\n");
-        printf("%02X ", byteArray[i]);
-    }
-    printf("\n");
+		printf("%02X ", byteArray[i]);
+	}
+	printf("\n");
 }
 
 /** Generates all the roundKeys required for the specific AES_type   
@@ -199,105 +199,105 @@ EXPORT void printBytesAsHex(const uint8_t* byteArray, size_t size, size_t column
  *          This memory allocated has to be handles by the user.
  */
 EXPORT uint8_t* expandKey (uint8_t* ogKey, AES_type aesType) {
-    int Nr;
-    int Nk;
-    uint8_t Rcon[] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
+	int Nr;
+	int Nk;
+	uint8_t Rcon[] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
 
-    switch (aesType) {
-        case AES_128 : 
-        Nk = 4;
-        Nr = 10;
-        break;
+	switch (aesType) {
+		case AES_128 : 
+		Nk = 4;
+		Nr = 10;
+		break;
 
-        case AES_192 : 
-        Nk = 6;
-        Nr = 12;
-        break;
+		case AES_192 : 
+		Nk = 6;
+		Nr = 12;
+		break;
 
-        case AES_256 : 
-        Nk = 8;
-        Nr = 14;
-        break;
+		case AES_256 : 
+		Nk = 8;
+		Nr = 14;
+		break;
 
-        default : 
-        printf("\nERROR : Please Enter AES_Type...\n");
-        return NULL;
-    }
+		default : 
+		printf("\nERROR : Please Enter AES_Type...\n");
+		return NULL;
+	}
 
-    // Allocating Memory for the expanded Key
-    uint8_t* expandedKey = (uint8_t*) calloc( 16*(Nr+1) , sizeof(uint8_t) );
-    uint8_t tempWord[4];
+	// Allocating Memory for the expanded Key
+	uint8_t* expandedKey = (uint8_t*) calloc( 16*(Nr+1) , sizeof(uint8_t) );
+	uint8_t tempWord[4];
 
-    // Copying the Original Key to the start of Expanded Key
-    for (int i = 0;i<Nk;++i) {
-        for (int j = 0;j<4;++j) {
-            expandedKey[4*i+j] = ogKey[4*i+j];
-        }
-        
-    }
+	// Copying the Original Key to the start of Expanded Key
+	for (int i = 0;i<Nk;++i) {
+		for (int j = 0;j<4;++j) {
+			expandedKey[4*i+j] = ogKey[4*i+j];
+		}
+		
+	}
 
-    // Adding the remaining Round Keys
-    for (int i = Nk*4;i<16*(Nr+1);i+=4) {
-        // Copying the previous word into tempWord
-        for (int j = 0;j<4;++j) {
-            tempWord[j] = expandedKey[i-4+j];
-        }
+	// Adding the remaining Round Keys
+	for (int i = Nk*4;i<16*(Nr+1);i+=4) {
+		// Copying the previous word into tempWord
+		for (int j = 0;j<4;++j) {
+			tempWord[j] = expandedKey[i-4+j];
+		}
 
-        // G Function called for every Nk Byte
-        if ( (i/4)%Nk == 0) {
-            // Rotating Left
-            uint8_t temp = tempWord[0];
-            tempWord[0] = tempWord[1];
-            tempWord[1] = tempWord[2];
-            tempWord[2] = tempWord[3];
-            tempWord[3] = temp;
+		// G Function called for every Nk Byte
+		if ( (i/4)%Nk == 0) {
+			// Rotating Left
+			uint8_t temp = tempWord[0];
+			tempWord[0] = tempWord[1];
+			tempWord[1] = tempWord[2];
+			tempWord[2] = tempWord[3];
+			tempWord[3] = temp;
 
-            // Substitute Box
-            for (int j = 0;j<4;++j) {
-                tempWord[j] = sBox[ tempWord[j] ];
-            }
+			// Substitute Box
+			for (int j = 0;j<4;++j) {
+				tempWord[j] = sBox[ tempWord[j] ];
+			}
 
-            // Rcon
-            tempWord[0] ^= Rcon[ (i/4)/Nk ];
+			// Rcon
+			tempWord[0] ^= Rcon[ (i/4)/Nk ];
 
-        }
+		}
 
-        // For AES_256 for every (Nk+4)th word do Substitute Box
-        if (aesType == AES_256 && (i/4)%Nk == 4 ) {
-            for (int j = 0;j<4;++j) {
-                tempWord[j] = sBox[ tempWord[j] ];
-            }
+		// For AES_256 for every (Nk+4)th word do Substitute Box
+		if (aesType == AES_256 && (i/4)%Nk == 4 ) {
+			for (int j = 0;j<4;++j) {
+				tempWord[j] = sBox[ tempWord[j] ];
+			}
 
-        }
+		}
 
-        // Xoring with the word Nk Places Prior
-        for (int j = 0;j<4;++j) {
-            expandedKey[i+j] = tempWord[j] ^ expandedKey[i-(4*Nk)+j];
-        }
+		// Xoring with the word Nk Places Prior
+		for (int j = 0;j<4;++j) {
+			expandedKey[i+j] = tempWord[j] ^ expandedKey[i-(4*Nk)+j];
+		}
 
-    }
+	}
 
-    return expandedKey;
+	return expandedKey;
 }
 
 /**  Switches the 4x4 (16 Byte) state matrix between Row Major and Column Major for AES operations.
  * @param state : A pointer to the 16 byte array which holds the state matrix
  */
 void switchStateBetweenRowOrColumnMajor (uint8_t* state) {
-    uint8_t colState[16];
+	uint8_t colState[16];
 
-    // Creating the new column Major Matrix
-    for (int i = 0;i<4;++i) {
-        for (int j =0;j<4;++j) {
-            colState[4*j+i] = state[4*i+j];
-        }
+	// Creating the new column Major Matrix
+	for (int i = 0;i<4;++i) {
+		for (int j =0;j<4;++j) {
+			colState[4*j+i] = state[4*i+j];
+		}
 
-    }
+	}
 
-    // Copying the new column major matrix on the current state
-    for (int i = 0;i<16;++i) {
-        state[i] = colState[i];
-    }
+	// Copying the new column major matrix on the current state
+	for (int i = 0;i<16;++i) {
+		state[i] = colState[i];
+	}
 
 }
 
@@ -310,12 +310,12 @@ void switchStateBetweenRowOrColumnMajor (uint8_t* state) {
  * @param key : The pointer to the 16 byte RoundKey to be added 
  */
 void addKey (uint8_t* state, uint8_t* key) {
-    for (int i = 0;i<4;++i) {
-        for (int j = 0;j<4;++j) {
-            state[4*j+i] ^= key[4*i+j];
-        }
+	for (int i = 0;i<4;++i) {
+		for (int j = 0;j<4;++j) {
+			state[4*j+i] ^= key[4*i+j];
+		}
 
-    }
+	}
 
 }
 
@@ -326,17 +326,17 @@ void addKey (uint8_t* state, uint8_t* key) {
  * @param state : the poointer to the 16 byte state matrix
  */
 void rotateRows (uint8_t* state) {    
-    // Rotating Row 0 : none, Row 1 : Rotate Left, Row 2 : Rotate Left Twice, Row 3 : Rotate Left Thrice
-    for (int i = 0;i<4;++i) {   // Number of Rotates
-        for (int j = 1;j<=i;++j) {  // Actually Performing the Rotates
-            uint8_t temp = state[i*4];
-            state[i*4] = state[i*4+1];
-            state[i*4+1] = state[i*4+2];
-            state[i*4+2] = state[i*4+3];
-            state[i*4+3] = temp;
-        }
-        
-    }
+	// Rotating Row 0 : none, Row 1 : Rotate Left, Row 2 : Rotate Left Twice, Row 3 : Rotate Left Thrice
+	for (int i = 0;i<4;++i) {   // Number of Rotates
+		for (int j = 1;j<=i;++j) {  // Actually Performing the Rotates
+			uint8_t temp = state[i*4];
+			state[i*4] = state[i*4+1];
+			state[i*4+1] = state[i*4+2];
+			state[i*4+2] = state[i*4+3];
+			state[i*4+3] = temp;
+		}
+		
+	}
 
 }
 
@@ -345,27 +345,27 @@ void rotateRows (uint8_t* state) {
  * @note the State Matrix should be in Column Major form, not the Row Major Plain Text
  */
 void mixColumns (uint8_t* state) {
-    uint8_t matrix[16] = {
-        0x02, 0x03, 0x01, 0x01,
-        0x01, 0x02, 0x03, 0x01,
-        0x01, 0x01, 0x02, 0x03,
-        0x03, 0x01, 0x01, 0x02
-    };
+	uint8_t matrix[16] = {
+		0x02, 0x03, 0x01, 0x01,
+		0x01, 0x02, 0x03, 0x01,
+		0x01, 0x01, 0x02, 0x03,
+		0x03, 0x01, 0x01, 0x02
+	};
 
-    uint8_t temp[4];
+	uint8_t temp[4];
 
-    for (int i = 0;i<4;++i) {
-        // Getting Each element of the New column by matrix multiplication
-        for (int j = 0;j<4;++j) {
-            temp[j] = multiplyGF2_8(state[i], matrix[4*j] ) ^ multiplyGF2_8(state[4+i] , matrix[4*j+1] ) ^ multiplyGF2_8( state[8+i] , matrix[4*j+2] ) ^ multiplyGF2_8( state[12+i], matrix[4*j+3] );
-        }
+	for (int i = 0;i<4;++i) {
+		// Getting Each element of the New column by matrix multiplication
+		for (int j = 0;j<4;++j) {
+			temp[j] = multiplyGF2_8(state[i], matrix[4*j] ) ^ multiplyGF2_8(state[4+i] , matrix[4*j+1] ) ^ multiplyGF2_8( state[8+i] , matrix[4*j+2] ) ^ multiplyGF2_8( state[12+i], matrix[4*j+3] );
+		}
 
-        // Copying the contents of the new column to our state
-        for (int j = 0;j<4;++j) {
-            state[4*j+i] = temp[j];
-        }
+		// Copying the contents of the new column to our state
+		for (int j = 0;j<4;++j) {
+			state[4*j+i] = temp[j];
+		}
 
-    }
+	}
 
 }
 
@@ -389,82 +389,82 @@ void mixColumns (uint8_t* state) {
  * @see For more information about the AES algorithm and its encryption modes, refer to the AES specification.
  */
 EXPORT uint8_t* AES_cipher (uint8_t* text, uint8_t* key, AES_type aesType) {
-    int Nk;
-    int Nr;
+	int Nk;
+	int Nr;
 
-    switch (aesType) {
-        case AES_128 : 
-        Nk = 4;
-        Nr = 10;
-        break;
+	switch (aesType) {
+		case AES_128 : 
+		Nk = 4;
+		Nr = 10;
+		break;
 
-        case AES_192 : 
-        Nk = 6;
-        Nr = 12;
-        break;
+		case AES_192 : 
+		Nk = 6;
+		Nr = 12;
+		break;
 
-        case AES_256 : 
-        Nk = 8;
-        Nr = 14;
-        break;
+		case AES_256 : 
+		Nk = 8;
+		Nr = 14;
+		break;
 
-        default : 
-        printf("\nERROR : Please Enter AES_Type...\n");
-        return NULL;
-    }
+		default : 
+		printf("\nERROR : Please Enter AES_Type...\n");
+		return NULL;
+	}
 
-    uint8_t* expandedKey = expandKey(key, aesType);
-    uint8_t* encryptedText = (uint8_t*)calloc(16+1,sizeof(uint8_t));    // Ensuring NULL termination of the encrypted Text (16+1)
+	uint8_t* expandedKey = expandKey(key, aesType);
+	uint8_t* encryptedText = (uint8_t*)calloc(16+1,sizeof(uint8_t));    // Ensuring NULL termination of the encrypted Text (16+1)
 
 
-    // Copying the Text to EncryptedText Buffer
-    for (int i = 0;i<16;++i) {
-        encryptedText[i] = text[i];
-    }
+	// Copying the Text to EncryptedText Buffer
+	for (int i = 0;i<16;++i) {
+		encryptedText[i] = text[i];
+	}
 
-    // Converting to Column Major to make the state matrix used for AES operations
-    switchStateBetweenRowOrColumnMajor(encryptedText);
+	// Converting to Column Major to make the state matrix used for AES operations
+	switchStateBetweenRowOrColumnMajor(encryptedText);
 
-    /* Initial Round */
-    // Adding Key
-    addKey(encryptedText,expandedKey);
+	/* Initial Round */
+	// Adding Key
+	addKey(encryptedText,expandedKey);
 
-    /* Main Rounds  */
-    for (int i = 1;i<Nr;++i) {
-        // Substitute Bytes
-        for (int j = 0;j<16;++j) {
-            encryptedText[j] = sBox[ encryptedText[j] ];
-        }
-        
-        // Rotating Rows
-        rotateRows(encryptedText);
+	/* Main Rounds  */
+	for (int i = 1;i<Nr;++i) {
+		// Substitute Bytes
+		for (int j = 0;j<16;++j) {
+			encryptedText[j] = sBox[ encryptedText[j] ];
+		}
+		
+		// Rotating Rows
+		rotateRows(encryptedText);
 
-        // Mixing Columns
-        mixColumns(encryptedText);
+		// Mixing Columns
+		mixColumns(encryptedText);
 
-        // Adding Key
-        addKey(encryptedText, expandedKey+16*i);
+		// Adding Key
+		addKey(encryptedText, expandedKey+16*i);
 
-    }
+	}
 
-    /* Final Round  */
-    // Substitute Bytes
-    for (int j = 0;j<16;++j) {
-        encryptedText[j] = sBox[ encryptedText[j] ];
-    }
+	/* Final Round  */
+	// Substitute Bytes
+	for (int j = 0;j<16;++j) {
+		encryptedText[j] = sBox[ encryptedText[j] ];
+	}
 
-    // Rotating Rows
-    rotateRows(encryptedText);
+	// Rotating Rows
+	rotateRows(encryptedText);
 
-    // Adding Key
-    addKey(encryptedText, expandedKey+16*Nr);
+	// Adding Key
+	addKey(encryptedText, expandedKey+16*Nr);
 
-    switchStateBetweenRowOrColumnMajor(encryptedText); // Making the encrypted Text Row Major for readability
+	switchStateBetweenRowOrColumnMajor(encryptedText); // Making the encrypted Text Row Major for readability
 
-    /*  Cleanup */
-    free(expandedKey);
+	/*  Cleanup */
+	free(expandedKey);
 
-    return encryptedText;
+	return encryptedText;
 
 }
 
@@ -477,17 +477,17 @@ EXPORT uint8_t* AES_cipher (uint8_t* text, uint8_t* key, AES_type aesType) {
  * @note The State Matrix should be in Column Major State.
  */
 void invRotateRows (uint8_t* state) {
-    // Rotating Row 0 : none, Row 1 : Rotate Right, Row 2 : Rotate Right Twice, Row 3 : Rotate Right Thrice
-    for (int i = 0;i<4;++i) {
-        for (int j = 1;j<=i;++j) {
-            uint8_t temp = state[i*4+3];
-            state[i*4+3] = state[i*4+2];
-            state[i*4+2] = state[i*4+1];
-            state[i*4+1] = state[i*4];
-            state[i*4] = temp;
-        }
+	// Rotating Row 0 : none, Row 1 : Rotate Right, Row 2 : Rotate Right Twice, Row 3 : Rotate Right Thrice
+	for (int i = 0;i<4;++i) {
+		for (int j = 1;j<=i;++j) {
+			uint8_t temp = state[i*4+3];
+			state[i*4+3] = state[i*4+2];
+			state[i*4+2] = state[i*4+1];
+			state[i*4+1] = state[i*4];
+			state[i*4] = temp;
+		}
 
-    }
+	}
 
 }
 
@@ -496,27 +496,27 @@ void invRotateRows (uint8_t* state) {
  * @note The State matrix should be in Column Major Form
  */
 void invMixColumns (uint8_t* state) {
-    uint8_t matrix[16] = {
-        0x0E, 0x0B, 0x0D, 0x09,
-        0x09, 0x0E, 0x0B, 0x0D,
-        0x0D, 0x09, 0x0E, 0x0B,
-        0x0B, 0x0D, 0x09, 0x0E
-    };
+	uint8_t matrix[16] = {
+		0x0E, 0x0B, 0x0D, 0x09,
+		0x09, 0x0E, 0x0B, 0x0D,
+		0x0D, 0x09, 0x0E, 0x0B,
+		0x0B, 0x0D, 0x09, 0x0E
+	};
 
-    uint8_t temp[4];
+	uint8_t temp[4];
 
-    for (int i = 0;i<4;++i) {
-        // Getting Each element of the New column by matrix multiplication
-        for (int j = 0;j<4;++j) {
-            temp[j] = multiplyGF2_8(state[i], matrix[4*j] ) ^ multiplyGF2_8(state[4+i] , matrix[4*j+1] ) ^ multiplyGF2_8( state[8+i] , matrix[4*j+2] ) ^ multiplyGF2_8( state[12+i],matrix[4*j+3] );
-        }
+	for (int i = 0;i<4;++i) {
+		// Getting Each element of the New column by matrix multiplication
+		for (int j = 0;j<4;++j) {
+			temp[j] = multiplyGF2_8(state[i], matrix[4*j] ) ^ multiplyGF2_8(state[4+i] , matrix[4*j+1] ) ^ multiplyGF2_8( state[8+i] , matrix[4*j+2] ) ^ multiplyGF2_8( state[12+i],matrix[4*j+3] );
+		}
 
-        // Copying the contents of the new column to our state
-        for (int j = 0;j<4;++j) {
-            state[4*j+i] = temp[j];
-        }
+		// Copying the contents of the new column to our state
+		for (int j = 0;j<4;++j) {
+			state[4*j+i] = temp[j];
+		}
 
-    }
+	}
 
 }
 
@@ -541,84 +541,83 @@ void invMixColumns (uint8_t* state) {
  * @see For more information about the AES algorithm and its decryption modes, refer to the AES specification.
  */
 EXPORT uint8_t* AES_invCipher (uint8_t* encryptedText, uint8_t* key, AES_type aesType) {
-    int Nk;
-    int Nr;
+	int Nk;
+	int Nr;
 
-    switch (aesType) {
-        case AES_128 : 
-        Nk = 4;
-        Nr = 10;
-        break;
+	switch (aesType) {
+		case AES_128 : 
+		Nk = 4;
+		Nr = 10;
+		break;
 
-        case AES_192 : 
-        Nk = 6;
-        Nr = 12;
-        break;
+		case AES_192 : 
+		Nk = 6;
+		Nr = 12;
+		break;
 
-        case AES_256 : 
-        Nk = 8;
-        Nr = 14;
-        break;
+		case AES_256 : 
+		Nk = 8;
+		Nr = 14;
+		break;
 
-        default : 
-        printf("\nERROR : Please Enter AES_Type...\n");
-        return NULL;
-    }
+		default : 
+		printf("\nERROR : Please Enter AES_Type...\n");
+		return NULL;
+	}
 
-    uint8_t* expandedKey = expandKey(key, aesType);
-    uint8_t* invSBox = inverseSBoxGen( (const uint8_t*)&sBox);
-    uint8_t* decryptedText = (uint8_t*)calloc(16+1,sizeof(uint8_t));    // Ensuring NULL termination of the decrypted Text (16+1)
+	uint8_t* expandedKey = expandKey(key, aesType);
+	uint8_t* decryptedText = (uint8_t*)calloc(16+1,sizeof(uint8_t));    // Ensuring NULL termination of the decrypted Text (16+1)
 
-    // Copying encryptedText to decryptedText buffer
-    for (int i = 0;i<16;++i) {
-        decryptedText[i] = encryptedText[i];
-    }
+	// Copying encryptedText to decryptedText buffer
+	for (int i = 0;i<16;++i) {
+		decryptedText[i] = encryptedText[i];
+	}
 
-    // Converting to column Major to form state Matrix used for AES operations
-    switchStateBetweenRowOrColumnMajor(decryptedText);
+	// Converting to column Major to form state Matrix used for AES operations
+	switchStateBetweenRowOrColumnMajor(decryptedText);
 
-    /* Initial Round    */
-    // XORing with Key
-    addKey(decryptedText, expandedKey+16*Nr);
-    
-    // inverse Rotate Rows (Rotate Right)
-    invRotateRows(decryptedText);
+	/* Initial Round    */
+	// XORing with Key
+	addKey(decryptedText, expandedKey+16*Nr);
+	
+	// inverse Rotate Rows (Rotate Right)
+	invRotateRows(decryptedText);
 
-    // inverse Substitute Box
-    for (int i = 0;i<16;++i) {
-        decryptedText[i] = invSBox[ decryptedText[i] ];
-    }
+	// inverse Substitute Box
+	for (int i = 0;i<16;++i) {
+		decryptedText[i] = invSBox[ decryptedText[i] ];
+	}
 
-    /* Main Rounds  */
-    for (int i = 16*(Nr-1);i>0;i-=16) {
-        // XOR with Key
-        addKey(decryptedText, expandedKey+i);
-        
-        // Inverse Mix Columns
-        invMixColumns(decryptedText);
-        
-        // Inverse Rotate Rows (Rotate Right)
-        invRotateRows(decryptedText);
+	/* Main Rounds  */
+	for (int i = 16*(Nr-1);i>0;i-=16) {
+		// XOR with Key
+		addKey(decryptedText, expandedKey+i);
+		
+		// Inverse Mix Columns
+		invMixColumns(decryptedText);
+		
+		// Inverse Rotate Rows (Rotate Right)
+		invRotateRows(decryptedText);
 
-        // Inverse Substitute Box
-        for (int j = 0;j<16;++j) {
-            decryptedText[j] = invSBox[ decryptedText[j] ];
-        }
+		// Inverse Substitute Box
+		for (int j = 0;j<16;++j) {
+			decryptedText[j] = invSBox[ decryptedText[j] ];
+		}
 
-    }
+	}
 
 
-    /* Final Round */
-    // XOR with Key
-    addKey(decryptedText, expandedKey);
+	/* Final Round */
+	// XOR with Key
+	addKey(decryptedText, expandedKey);
 
-    switchStateBetweenRowOrColumnMajor(decryptedText);    // Making decrypted Text Row Major
+	switchStateBetweenRowOrColumnMajor(decryptedText);    // Making decrypted Text Row Major
 
-    /*  Cleanup */
-    free(expandedKey);
-    free(invSBox);
+	/*  Cleanup */
+	free(expandedKey);
+	free(invSBox);
 
-    return decryptedText;
+	return decryptedText;
 }
 
 /*  Functions used in the FINAL AES_encrypt() and AES_decrypt() functions   */
@@ -632,22 +631,22 @@ EXPORT uint8_t* AES_invCipher (uint8_t* encryptedText, uint8_t* key, AES_type ae
  * @see PKCS padding : https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
  */
 EXPORT char* addPadding (char* text, size_t blockSize) {
-    size_t len = strlen(text);  
-    size_t diff = blockSize - (len%blockSize);
-    
-    // Allocating memory for the new padded Text
-    char* paddedText = (char*) calloc(len+diff+1, sizeof(char) );
-    // Copying contents of the previous text to the padded Text
-    memcpy(paddedText, text, len);
+	size_t len = strlen(text);  
+	size_t diff = blockSize - (len%blockSize);
+	
+	// Allocating memory for the new padded Text
+	char* paddedText = (char*) calloc(len+diff+1, sizeof(char) );
+	// Copying contents of the previous text to the padded Text
+	memcpy(paddedText, text, len);
 
-    // adding padding
-    for (int i = 0;i<diff;++i) {
-        paddedText[len+i] = diff;
-    }
+	// adding padding
+	for (int i = 0;i<diff;++i) {
+		paddedText[len+i] = diff;
+	}
 
-    paddedText[len+diff] = '\0';  // NULL terminate the string
+	paddedText[len+diff] = '\0';  // NULL terminate the string
 
-    return paddedText;
+	return paddedText;
 }
 
 /** Removes the padding from a padded Text returned from the addPadding() function.
@@ -655,16 +654,16 @@ EXPORT char* addPadding (char* text, size_t blockSize) {
  * @param blockSize : The size of 1 block.
  */
 EXPORT void removePadding (char* paddedText, size_t blockSize) {
-    size_t len = strlen(paddedText);
-    size_t padding = paddedText[len-1];
+	size_t len = strlen(paddedText);
+	size_t padding = paddedText[len-1];
 
-    if (padding < blockSize) {
-        for (int i = 0;i<=padding;++i) {
-            paddedText[len-i] = '\0';   // Clearing all bytes of padding
-        }
+	if (padding < blockSize) {
+		for (int i = 0;i<=padding;++i) {
+			paddedText[len-i] = '\0';   // Clearing all bytes of padding
+		}
 
-    }
-    
+	}
+	
 }
 
 /** Converts a Byte Array to a Hexadecimal String.
@@ -677,17 +676,17 @@ EXPORT void removePadding (char* paddedText, size_t blockSize) {
  *          This memory allocation has to be handled by the user.
  */
 EXPORT char* bytesToHexString (uint8_t* byteArray, size_t length) {
-    char* hexString = (char*)malloc(length * 2 + 1); // Two characters per byte plus null terminator
-    if (hexString == NULL) {
-        return NULL; // Memory allocation failed
-    }
+	char* hexString = (char*)malloc(length * 2 + 1); // Two characters per byte plus null terminator
+	if (hexString == NULL) {
+		return NULL; // Memory allocation failed
+	}
 
-    for (size_t i = 0; i < length; ++i) {
-        snprintf(hexString + i * 2, 3, "%02X", byteArray[i]);
-    }
+	for (size_t i = 0; i < length; ++i) {
+		snprintf(hexString + i * 2, 3, "%02X", byteArray[i]);
+	}
 
-    hexString[length * 2] = '\0'; // Null-terminate the hex string
-    return hexString;
+	hexString[length * 2] = '\0'; // Null-terminate the hex string
+	return hexString;
 } 
 
 /** Converts a HexaDecimal string to a byte array.
@@ -696,27 +695,27 @@ EXPORT char* bytesToHexString (uint8_t* byteArray, size_t length) {
  * @param hexString : Thepointer to the HexaDecimal String
  */
 EXPORT uint8_t* hexStringToByteArray(const char* hexString) {
-    // Return NULL if no pointer is passed
-    if (hexString == NULL) return NULL;
+	// Return NULL if no pointer is passed
+	if (hexString == NULL) return NULL;
 
-    size_t hexLen = strlen(hexString);
-    if (hexLen % 2 != 0) {
-        return NULL; // Hex string length must be even
-    }
+	size_t hexLen = strlen(hexString);
+	if (hexLen % 2 != 0) {
+		return NULL; // Hex string length must be even
+	}
 
-    size_t byteLen = hexLen / 2;
-    uint8_t* byteArray = (uint8_t*)malloc(byteLen+1);
-    if (byteArray == NULL) {
-        return NULL; // Memory allocation failed
-    }
+	size_t byteLen = hexLen / 2;
+	uint8_t* byteArray = (uint8_t*)malloc(byteLen+1);
+	if (byteArray == NULL) {
+		return NULL; // Memory allocation failed
+	}
 
-    for (size_t i = 0; i < byteLen; ++i) {
-        sscanf(hexString + i * 2, "%2hhX", &byteArray[i]);
-    }
+	for (size_t i = 0; i < byteLen; ++i) {
+		sscanf(hexString + i * 2, "%2hhX", &byteArray[i]);
+	}
 
-    byteArray[byteLen] = 0x00;  // NULL terminating the Byte ARRAY
+	byteArray[byteLen] = 0x00;  // NULL terminating the Byte ARRAY
 
-    return byteArray;
+	return byteArray;
 }
 
 
@@ -748,57 +747,57 @@ EXPORT uint8_t* hexStringToByteArray(const char* hexString) {
  * @see PKCS#7 padding: https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
  */
 EXPORT char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_type aesType) {
-    // Adding Padding to the plain Text
-    char* paddedText = addPadding(plainText, 16);
-    size_t textLength = strlen(paddedText);
+	// Adding Padding to the plain Text
+	char* paddedText = addPadding(plainText, 16);
+	size_t textLength = strlen(paddedText);
 
-    // Converting input Key to Byte ARRAY
-    uint8_t* key = hexStringToByteArray(keyHexStr);
-    // Converting input IV to BYTE ARRAY
-    uint8_t* iv = hexStringToByteArray(IVHexStr);
+	// Converting input Key to Byte ARRAY
+	uint8_t* key = hexStringToByteArray(keyHexStr);
+	// Converting input IV to BYTE ARRAY
+	uint8_t* iv = hexStringToByteArray(IVHexStr);
 
-    
-    // Creating Memory for encrypted Text
-    uint8_t* encryptedText = (uint8_t*) calloc(textLength, sizeof(uint8_t) );
+	
+	// Creating Memory for encrypted Text
+	uint8_t* encryptedText = (uint8_t*) calloc(textLength, sizeof(uint8_t) );
 
-    // XORing the IV with the first Text Block if IV is provided for CBC mode
-    if (iv != NULL) {
-        switchStateBetweenRowOrColumnMajor(iv);   // Converting the IV to Column Major 
-        addKey(paddedText, iv);
-    }
+	// XORing the IV with the first Text Block if IV is provided for CBC mode
+	if (iv != NULL) {
+		switchStateBetweenRowOrColumnMajor(iv);   // Converting the IV to Column Major 
+		addKey(paddedText, iv);
+	}
 
-    /*  Main Encryption */
-    // First Text Block
-    uint8_t* encryptedState = AES_cipher(paddedText, key, aesType);
-    // Copying the Encrypted State to the Final Encrypted Text
-    memcpy(encryptedText, encryptedState, 16);
+	/*  Main Encryption */
+	// First Text Block
+	uint8_t* encryptedState = AES_cipher(paddedText, key, aesType);
+	// Copying the Encrypted State to the Final Encrypted Text
+	memcpy(encryptedText, encryptedState, 16);
 
-    // Remianing Text Blocks
-    for (int i = 16;i<textLength;i+=16) {
-        // If CBC mode then XOR previous encrypted State to the next
-        if (iv != NULL) {
-            switchStateBetweenRowOrColumnMajor(encryptedState);
-            addKey(paddedText+i, encryptedState);     // XORing next textBlock with the current encrypted state for CBC mode
-        }
+	// Remianing Text Blocks
+	for (int i = 16;i<textLength;i+=16) {
+		// If CBC mode then XOR previous encrypted State to the next
+		if (iv != NULL) {
+			switchStateBetweenRowOrColumnMajor(encryptedState);
+			addKey(paddedText+i, encryptedState);     // XORing next textBlock with the current encrypted state for CBC mode
+		}
 
-        free(encryptedState); // Freeing the previous allocated memory to the encryptedState Pointer so that pointer can be used to point to new location
+		free(encryptedState); // Freeing the previous allocated memory to the encryptedState Pointer so that pointer can be used to point to new location
 
-        encryptedState = AES_cipher(paddedText+i, key, aesType);
-        // Copying the Encrypted State to the Final Encrypted Text
-        memcpy(encryptedText+i, encryptedState, 16);
+		encryptedState = AES_cipher(paddedText+i, key, aesType);
+		// Copying the Encrypted State to the Final Encrypted Text
+		memcpy(encryptedText+i, encryptedState, 16);
 
-    }
+	}
 
-    char* encryptedHexStr = bytesToHexString(encryptedText, textLength);
+	char* encryptedHexStr = bytesToHexString(encryptedText, textLength);
 
-    // Cleanup
-    free(iv);
-    free(key);
-    free(encryptedState);
-    free(paddedText);
-    free(encryptedText);
+	// Cleanup
+	free(iv);
+	free(key);
+	free(encryptedState);
+	free(paddedText);
+	free(encryptedText);
 
-    return encryptedHexStr;
+	return encryptedHexStr;
 }
 
 /** Decrypts data encrypted using the Advanced Encryption Standard (AES) algorithm.
@@ -828,57 +827,57 @@ EXPORT char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_
  * @see For more information about the AES algorithm and its decryption modes, refer to the AES specification.
  */
 EXPORT char* AES_decrypt (char* encryptedHexString, char* keyHexStr, char* IVHexStr, AES_type aesType) {
-    uint8_t* encryptedText = hexStringToByteArray(encryptedHexString);
-    size_t textLen = strlen(encryptedText);
-    uint8_t* key = hexStringToByteArray(keyHexStr);
-    uint8_t* iv = hexStringToByteArray(IVHexStr);
-    uint8_t currIv[16+1];
+	uint8_t* encryptedText = hexStringToByteArray(encryptedHexString);
+	size_t textLen = strlen(encryptedText);
+	uint8_t* key = hexStringToByteArray(keyHexStr);
+	uint8_t* iv = hexStringToByteArray(IVHexStr);
+	uint8_t currIv[16+1];
 
-    // Allocating the Memory for the Decrypted Text
-    uint8_t* decryptedText = (uint8_t*) calloc(textLen+1, sizeof(uint8_t) );
-    
-    // Storing the 16 byte decrypted State
-    uint8_t* decryptedState = NULL;
-    
-    // Main Decryption Rounds
-    for (int i = textLen - 16; i>=0;i-=16) {
-        // Freeing the previous memory allocated to the decryptedState so that pointer can be reused for next memory allocation
-        free(decryptedState);
-        // Decrypting Current State Block
-        decryptedState = AES_invCipher( (uint8_t*)encryptedText+i, key, aesType);
+	// Allocating the Memory for the Decrypted Text
+	uint8_t* decryptedText = (uint8_t*) calloc(textLen+1, sizeof(uint8_t) );
+	
+	// Storing the 16 byte decrypted State
+	uint8_t* decryptedState = NULL;
+	
+	// Main Decryption Rounds
+	for (int i = textLen - 16; i>=0;i-=16) {
+		// Freeing the previous memory allocated to the decryptedState so that pointer can be reused for next memory allocation
+		free(decryptedState);
+		// Decrypting Current State Block
+		decryptedState = AES_invCipher( (uint8_t*)encryptedText+i, key, aesType);
 
-        // For CBC Mode
-        if (iv != NULL) {
-            // Getting the curr IV
-            if (i < 16) {
-                memcpy(currIv, iv, 16);
-            }
-            else {
-                memcpy(currIv, (uint8_t*)encryptedText+(i-16), 16);
-            }
+		// For CBC Mode
+		if (iv != NULL) {
+			// Getting the curr IV
+			if (i < 16) {
+				memcpy(currIv, iv, 16);
+			}
+			else {
+				memcpy(currIv, (uint8_t*)encryptedText+(i-16), 16);
+			}
 
-            // XORing the state with the current IV
-            switchStateBetweenRowOrColumnMajor(currIv);   // Converting IV to Column Major to perform AES operations
-            addKey( (uint8_t*)decryptedState, currIv);
+			// XORing the state with the current IV
+			switchStateBetweenRowOrColumnMajor(currIv);   // Converting IV to Column Major to perform AES operations
+			addKey( (uint8_t*)decryptedState, currIv);
 
-        }        
+		}        
 
-        
-        // Copying decrypted State to the final decrypted Text
-        memcpy( (uint8_t*)&decryptedText[i], decryptedState, 16);
+		
+		// Copying decrypted State to the final decrypted Text
+		memcpy( (uint8_t*)&decryptedText[i], decryptedState, 16);
 
-    }
+	}
 
-    // Removing Padding from the text
-    removePadding(decryptedText, 16);
-    
-    /*  Cleanup */
-    free(iv);
-    free(key);
-    free(encryptedText);
-    free(decryptedState);
+	// Removing Padding from the text
+	removePadding(decryptedText, 16);
+	
+	/*  Cleanup */
+	free(iv);
+	free(key);
+	free(encryptedText);
+	free(decryptedState);
 
-    return( (char*) decryptedText);
+	return( (char*) decryptedText);
 
 }
 
