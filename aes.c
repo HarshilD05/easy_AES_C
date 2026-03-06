@@ -4,6 +4,35 @@
 #include<stdlib.h>	// For malloc() and rand()
 #include<string.h>	// for memcpy()
 
+/*  Internal helper functions for input validation  */
+
+/* Validates a hex string: non-NULL, non-empty, even length, and all chars in [0-9A-Fa-f].
+ * If expectedLen > 0, also enforces strlen(hexStr) == expectedLen.
+ * Returns 0 on success, -1 on failure.
+ */
+static int validateHexString(const char* hexStr, size_t expectedLen) {
+	if (hexStr == NULL) return -1;
+	size_t len = strlen(hexStr);
+	if (len == 0 || len % 2 != 0) return -1;
+	if (expectedLen > 0 && len != expectedLen) return -1;
+	for (size_t i = 0; i < len; i++) {
+		char c = hexStr[i];
+		if (!((c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f')))
+			return -1;
+	}
+	return 0;
+}
+
+/* Returns the required hex string length for the given AES key type, or 0 for an invalid type. */
+static size_t expectedKeyHexLen(AES_type aesType) {
+	switch (aesType) {
+		case AES_128: return 32;   /* 16 bytes * 2 */
+		case AES_192: return 48;   /* 24 bytes * 2 */
+		case AES_256: return 64;   /* 32 bytes * 2 */
+		default:      return 0;
+	}
+}
+
 /*  Functions required for handling GF(2^8) polynomial arithmetic   */
 uint8_t reduceGF2_8 (unsigned poly, unsigned irreducablePoly) { 
 	uint8_t msbPoly = 0;
@@ -96,7 +125,6 @@ uint8_t rngByte() {
 }
 
 uint8_t* sBoxGen (unsigned int seed) {  
-	size_t itt = 0xFF;
 	// Seting the Seed value for RNG
 	srand(seed);
 	// Allocating Memory for the sBox
@@ -106,11 +134,13 @@ uint8_t* sBoxGen (unsigned int seed) {
 	uint8_t start = rngByte();
 	uint8_t coordinate = 0x00;
 
-	while (itt) {
+	size_t itt = 0;
+	while (itt <= 0xFF) {
 		// When the last empty box is left to fill put the starting coordinates
-		if (itt == 1) {
+		if (itt == 0xFF) {
 			sBox[coordinate] = start;
-			--itt;
+			itt++;
+			break;
 		}
 		
 		value = rngByte();
@@ -119,7 +149,7 @@ uint8_t* sBoxGen (unsigned int seed) {
 		if ( (value != start) && (sBox[value] == 0) && (value != coordinate) ) {
 			sBox[coordinate] = value;
 			coordinate = value;
-			--itt;
+			itt++;
 		}
 	}
 
@@ -615,8 +645,7 @@ EXPORT uint8_t* AES_invCipher (uint8_t* encryptedText, uint8_t* key, AES_type ae
 
 	/*  Cleanup */
 	free(expandedKey);
-	free(invSBox);
-
+	
 	return decryptedText;
 }
 
@@ -630,21 +659,18 @@ EXPORT uint8_t* AES_invCipher (uint8_t* encryptedText, uint8_t* key, AES_type ae
  *          This memory allocation has to be handled by the user.
  * @see PKCS padding : https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
  */
-EXPORT char* addPadding (char* text, size_t blockSize) {
-	size_t len = strlen(text);  
-	size_t diff = blockSize - (len%blockSize);
-	
-	// Allocating memory for the new padded Text
-	char* paddedText = (char*) calloc(len+diff+1, sizeof(char) );
-	// Copying contents of the previous text to the padded Text
-	memcpy(paddedText, text, len);
+EXPORT uint8_t* addPadding (const uint8_t* text, size_t textLen, size_t blockSize) {
+	size_t diff = blockSize - (textLen % blockSize);
 
-	// adding padding
-	for (int i = 0;i<diff;++i) {
-		paddedText[len+i] = diff;
+	uint8_t* paddedText = (uint8_t*) calloc(textLen + diff + 1, sizeof(uint8_t));
+	if (paddedText == NULL) return NULL;
+	memcpy(paddedText, text, textLen);
+
+	for (size_t i = 0; i < diff; ++i) {
+		paddedText[textLen + i] = (uint8_t)diff;
 	}
 
-	paddedText[len+diff] = '\0';  // NULL terminate the string
+	paddedText[textLen + diff] = 0x00;
 
 	return paddedText;
 }
@@ -653,17 +679,24 @@ EXPORT char* addPadding (char* text, size_t blockSize) {
  * @param paddedText : The pointer to the paddedText
  * @param blockSize : The size of 1 block.
  */
-EXPORT void removePadding (char* paddedText, size_t blockSize) {
-	size_t len = strlen(paddedText);
-	size_t padding = paddedText[len-1];
+EXPORT int removePadding (uint8_t* paddedText, size_t textLen, size_t blockSize) {
+	if (paddedText == NULL || textLen == 0 || textLen % blockSize != 0) return -1;
+	uint8_t padding = paddedText[textLen - 1];
 
-	if (padding < blockSize) {
-		for (int i = 0;i<=padding;++i) {
-			paddedText[len-i] = '\0';   // Clearing all bytes of padding
-		}
+	// Validate PKCS#7: padding value must be in [1, blockSize]
+	if (padding == 0 || padding > (uint8_t)blockSize) return -1;
 
+	// Validate that every padding byte carries the correct value
+	for (size_t i = 0; i < padding; ++i) {
+		if (paddedText[textLen - 1 - i] != padding) return -1;
 	}
-	
+
+	// Zero out the padding bytes
+	for (size_t i = 0; i < padding; ++i) {
+		paddedText[textLen - 1 - i] = 0x00;
+	}
+
+	return (int)padding;
 }
 
 /** Converts a Byte Array to a Hexadecimal String.
@@ -695,19 +728,12 @@ EXPORT char* bytesToHexString (uint8_t* byteArray, size_t length) {
  * @param hexString : Thepointer to the HexaDecimal String
  */
 EXPORT uint8_t* hexStringToByteArray(const char* hexString) {
-	// Return NULL if no pointer is passed
-	if (hexString == NULL) return NULL;
+	if (validateHexString(hexString, 0) != 0) return NULL;
 
 	size_t hexLen = strlen(hexString);
-	if (hexLen % 2 != 0) {
-		return NULL; // Hex string length must be even
-	}
-
 	size_t byteLen = hexLen / 2;
-	uint8_t* byteArray = (uint8_t*)malloc(byteLen+1);
-	if (byteArray == NULL) {
-		return NULL; // Memory allocation failed
-	}
+	uint8_t* byteArray = (uint8_t*)malloc(byteLen + 1);
+	if (byteArray == NULL) return NULL;
 
 	for (size_t i = 0; i < byteLen; ++i) {
 		sscanf(hexString + i * 2, "%2hhX", &byteArray[i]);
@@ -746,19 +772,26 @@ EXPORT uint8_t* hexStringToByteArray(const char* hexString) {
  * @see For more information about the AES algorithm and its encryption modes, refer to the AES specification.
  * @see PKCS#7 padding: https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
  */
-EXPORT char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_type aesType) {
+EXPORT char* AES_encrypt (const uint8_t* plainText, size_t plainTextLen, const char* keyHexStr, size_t keyHexLen, const char* IVHexStr, AES_type aesType) {
+	// --- Input Validation ---
+	if (plainText == NULL || plainTextLen == 0 || plainTextLen > AES_MAX_PLAINTEXT_LEN) return NULL;
+	if (validateHexString(keyHexStr, keyHexLen) != 0) return NULL;
+	if (keyHexLen != expectedKeyHexLen(aesType)) return NULL;
+	if (IVHexStr != NULL && validateHexString(IVHexStr, 32) != 0) return NULL;
+
 	// Adding Padding to the plain Text
-	char* paddedText = addPadding(plainText, 16);
-	size_t textLength = strlen(paddedText);
+	uint8_t* paddedText = addPadding(plainText, plainTextLen, 16);
+	if (paddedText == NULL) return NULL;
+	size_t textLength = plainTextLen + (16 - (plainTextLen % 16));
 
 	// Converting input Key to Byte ARRAY
 	uint8_t* key = hexStringToByteArray(keyHexStr);
-	// Converting input IV to BYTE ARRAY
+	// Converting input IV to Byte ARRAY
 	uint8_t* iv = hexStringToByteArray(IVHexStr);
 
-	
 	// Creating Memory for encrypted Text
-	uint8_t* encryptedText = (uint8_t*) calloc(textLength, sizeof(uint8_t) );
+	uint8_t* encryptedText = (uint8_t*) calloc(textLength, sizeof(uint8_t));
+	if (encryptedText == NULL) { free(paddedText); free(key); free(iv); return NULL; }
 
 	// XORing the IV with the first Text Block if IV is provided for CBC mode
 	if (iv != NULL) {
@@ -773,7 +806,7 @@ EXPORT char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_
 	memcpy(encryptedText, encryptedState, 16);
 
 	// Remianing Text Blocks
-	for (int i = 16;i<textLength;i+=16) {
+	for (size_t i = 16; i < textLength; i+=16) {
 		// If CBC mode then XOR previous encrypted State to the next
 		if (iv != NULL) {
 			switchStateBetweenRowOrColumnMajor(encryptedState);
@@ -826,21 +859,30 @@ EXPORT char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_
  * @see AES_encrypt function documentation for more information about AES encryption and usage.
  * @see For more information about the AES algorithm and its decryption modes, refer to the AES specification.
  */
-EXPORT char* AES_decrypt (char* encryptedHexString, char* keyHexStr, char* IVHexStr, AES_type aesType) {
+EXPORT char* AES_decrypt (const char* encryptedHexString, const char* keyHexStr, size_t keyHexLen, const char* IVHexStr, AES_type aesType) {
+	// --- Input Validation ---
+	if (validateHexString(encryptedHexString, 0) != 0) return NULL;
+	size_t textLen = strlen(encryptedHexString) / 2;
+	if (textLen == 0 || textLen % 16 != 0) return NULL;
+	if (validateHexString(keyHexStr, keyHexLen) != 0) return NULL;
+	if (keyHexLen != expectedKeyHexLen(aesType)) return NULL;
+	if (IVHexStr != NULL && validateHexString(IVHexStr, 32) != 0) return NULL;
+
 	uint8_t* encryptedText = hexStringToByteArray(encryptedHexString);
-	size_t textLen = strlen(encryptedText);
+	if (encryptedText == NULL) return NULL;
 	uint8_t* key = hexStringToByteArray(keyHexStr);
 	uint8_t* iv = hexStringToByteArray(IVHexStr);
 	uint8_t currIv[16+1];
 
 	// Allocating the Memory for the Decrypted Text
 	uint8_t* decryptedText = (uint8_t*) calloc(textLen+1, sizeof(uint8_t) );
+	if (decryptedText == NULL) { free(encryptedText); free(key); free(iv); return NULL; }
 	
 	// Storing the 16 byte decrypted State
 	uint8_t* decryptedState = NULL;
 	
 	// Main Decryption Rounds
-	for (int i = textLen - 16; i>=0;i-=16) {
+	for (size_t i = textLen - 16; i >= 0; i-=16) {
 		// Freeing the previous memory allocated to the decryptedState so that pointer can be reused for next memory allocation
 		free(decryptedState);
 		// Decrypting Current State Block
@@ -869,7 +911,12 @@ EXPORT char* AES_decrypt (char* encryptedHexString, char* keyHexStr, char* IVHex
 	}
 
 	// Removing Padding from the text
-	removePadding(decryptedText, 16);
+	int paddingRemoved = removePadding(decryptedText, textLen, 16);
+	if (paddingRemoved < 0) {
+		free(iv); free(key); free(encryptedText); free(decryptedState); free(decryptedText);
+		return NULL;
+	}
+	/* actual plaintext length = textLen - paddingRemoved */
 	
 	/*  Cleanup */
 	free(iv);

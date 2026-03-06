@@ -9,6 +9,9 @@ extern "C" {
 
 #define EXPORT __declspec(dllexport)
 
+/* Maximum number of plaintext bytes that can be encrypted in a single AES_encrypt() call. */
+#define AES_MAX_PLAINTEXT_LEN (1u << 20)   /* 1 MB */
+
 typedef enum {
 	AES_128,
 	AES_192,
@@ -133,21 +136,25 @@ EXPORT uint8_t* AES_cipher (uint8_t* text, uint8_t* key, AES_type aesType);
 EXPORT uint8_t* AES_invCipher (uint8_t* encryptedText, uint8_t* key, AES_type aesType);
 
 
-/** Adds padding to the input text according to the PKCS standards ONLY when the text length is not a multiple of the blockSize.
- * @param text : the pointer to the plain Text
- * @param blockSize : the size of 1 block in Bytes.
- * 
- * @return : Returns a pointer to the padded Text whose length is a multiple of the blockSize.
- *          This memory allocation has to be handled by the user.
- * @see PKCS padding : https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
+/** Adds PKCS#7 padding to a byte buffer so its length is a multiple of blockSize.
+ * @param text     : Pointer to the input data (may contain arbitrary bytes).
+ * @param textLen  : Exact byte length of the input data.
+ * @param blockSize: Block size in bytes (e.g. 16 for AES).
+ * @return Heap-allocated padded buffer of length (textLen + padding). Caller must free().
+ *         Returns NULL on allocation failure.
+ * @see PKCS#7: https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
  */
-EXPORT char* addPadding (char* text, size_t blockSize);
+EXPORT uint8_t* addPadding (const uint8_t* text, size_t textLen, size_t blockSize);
 
-/** Removes the padding from a padded Text returned from the addPadding() function.
- * @param paddedText : The pointer to the paddedText
- * @param blockSize : The size of 1 block.
+/** Removes PKCS#7 padding in-place. Validates that all padding bytes are correct.
+ * @param paddedText : Pointer to the padded buffer.
+ * @param textLen    : Total byte length of the padded buffer (must be a multiple of blockSize).
+ * @param blockSize  : Block size in bytes.
+ * @return The number of padding bytes removed (1–blockSize) on success, or -1 if validation fails
+ *         (NULL pointer, bad length, invalid padding value, or corrupted padding bytes).
+ *         Plaintext length after removal = textLen - returnValue.
  */
-EXPORT void removePadding (char* paddedText, size_t blockSize);
+EXPORT int removePadding (uint8_t* paddedText, size_t textLen, size_t blockSize);
 
 /** Converts a Byte Array to a Hexadecimal String.
  * This Helps in correctly transferring the actual Byte Array without misinterpretation due to non-printable ASCII characters.
@@ -194,7 +201,14 @@ EXPORT uint8_t* hexStringToByteArray(const char* hexString);
  * @see For more information about the AES algorithm and its encryption modes, refer to the AES specification.
  * @see PKCS#7 padding: https://www.ibm.com/docs/en/zos/2.1.0?topic=rules-pkcs-padding-method
  */
-EXPORT char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_type aesType);
+/** @param plainText    Pointer to the plaintext bytes (need not be null-terminated).
+ * @param plainTextLen Exact byte length of plainText. Must be > 0 and <= AES_MAX_PLAINTEXT_LEN.
+ * @param keyHexStr    AES key as a hex string. Caller must pass the exact character count in keyHexLen.
+ *                     Required lengths: AES-128 = 32, AES-192 = 48, AES-256 = 64 hex chars.
+ * @param keyHexLen    Character length of keyHexStr (excluding null terminator). Used to validate the key.
+ * @param IVHexStr     IV as a 32-char hex string for CBC mode, or NULL for ECB mode.
+ */
+EXPORT char* AES_encrypt (const uint8_t* plainText, size_t plainTextLen, const char* keyHexStr, size_t keyHexLen, const char* IVHexStr, AES_type aesType);
 
 /** Decrypts data encrypted using the Advanced Encryption Standard (AES) algorithm.
  *
@@ -222,7 +236,13 @@ EXPORT char* AES_encrypt (char* plainText, char* keyHexStr, char* IVHexStr, AES_
  * @see AES_encrypt function documentation for more information about AES encryption and usage.
  * @see For more information about the AES algorithm and its decryption modes, refer to the AES specification.
  */
-EXPORT char* AES_decrypt (char* encryptedHexString, char* keyHexStr, char* IVHexStr, AES_type aesType);
+/** @param encryptedHexStr Ciphertext as a hex string produced by AES_encrypt().
+ * @param keyHexStr       AES key as a hex string. Caller must pass the exact character count in keyHexLen.
+ *                        Required lengths: AES-128 = 32, AES-192 = 48, AES-256 = 64 hex chars.
+ * @param keyHexLen       Character length of keyHexStr (excluding null terminator). Used to validate the key.
+ * @param IVHexStr        IV as a 32-char hex string for CBC mode, or NULL for ECB mode.
+ */
+EXPORT char* AES_decrypt (const char* encryptedHexStr, const char* keyHexStr, size_t keyHexLen, const char* IVHexStr, AES_type aesType);
 
 #ifdef __cplusplus
 }
